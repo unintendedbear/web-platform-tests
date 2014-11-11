@@ -4,7 +4,7 @@
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <div id="log"></div>
-<iframe></iframe>
+<iframe srcdoc="<body test>"></iframe>
 <script>
  setup({explicit_done:true})
 
@@ -39,9 +39,24 @@
      }, val[0])
    })
 
+   // Note: these are not [NewObject] and can be cached. But across globals?
+   ;[["getElementsByTagName", "x"],
+     ["getElementsByTagNameNS", null, "x"],
+     ["getElementsByClassName", "x"]].forEach(function(val) {
+     test(function() {
+       var obj = self[0].document[val[0]](val[1], val[2])
+       assert_global(obj)
+
+       var obj2 = Document.prototype[val[0]].call(self[0].document, val[1], val[2])
+       assert_global(obj)
+
+       assert_equals(obj, obj2) // XXX this might be controversial
+     }, val[0])
+   })
+
    ;[["createDocumentType", "x", "", ""],
-    ["createDocument", null, "", null],
-    ["createHTMLDocument", "x"]].forEach(function(val) {
+     ["createDocument", null, "", null],
+     ["createHTMLDocument", "x"]].forEach(function(val) {
      test(function() {
        var obj = self[0].document.implementation[val[0]](val[1], val[2], val[3])
        assert_global(obj)
@@ -51,17 +66,67 @@
      }, val[0])
    })
 
-   test(function() {
-     var c = self[0].document.createElement("canvas").getContext("2d"),
-         img = c.createImageData(5, 5);
-     assert_global(img)
-     assert_global(img.data)
+   ;[["item", 0],
+     ["getNamedItem", "test"],
+     ["getNamedItemNS", null, "test"]].forEach(function(val) {
+     test(function() {
+       var obj = self[0].document.body.attributes[val[0]](val[1], val[2])
+       assert_global(obj)
 
-     img = CanvasRenderingContext2D.prototype.createImageData.call(c, 5, 5);
-     assert_global(img)
-     assert_global(img.data)
-   }, "createImageData")
+       var obj2 = NamedNodeMap.prototype[val[0]].call(self[0].document.body.attributes, val[1], val[2])
+       assert_global(obj)
+
+       assert_equals(obj, obj2)
+     }, "NamedNodeMap " + val[0])
+   })
+
+   test(function() {
+     var c = self[0].document.createTextNode(""),
+         obj = c.splitText(0)
+     assert_global(obj)
+
+     obj = Text.prototype.splitText.call(c, "")
+     assert_global(obj)
+   }, "splitText")
+
+   ;["extractContents",
+     "cloneContents",
+     "cloneRange"].forEach(function(val) {
+     test(function() {
+       var c = self[0].document.createRange(),
+           obj = c[val]()
+       assert_global(obj)
+
+       obj = Range.prototype[val].call(c)
+       assert_global(obj)
+     }, val)
+   })
+
+   ;["2d", "webgl"].forEach(function(val) {
+     test(function() {
+       var c = self[0].document.createElement("canvas"),
+           obj = c.getContext(val)
+       assert_global(obj)
+
+       obj = HTMLCanvasElement.prototype.getContext.call(c, val)
+       assert_global(obj)
+     }, "getContext " + val)
+   })
+
+   ;[["createImageData", 5, 5],
+     ["getImageData", 5, 5, 5, 5]].forEach(function(val) {
+     test(function() {
+       var c = self[0].document.createElement("canvas").getContext("2d"),
+           obj = c[val[0]](val[1], val[2], val[3], val[4]);
+       assert_global(obj)
+       assert_global(obj.data)
+
+       obj = CanvasRenderingContext2D.prototype[val[0]].call(c, val[1], val[2], val[3], val[4]);
+       assert_global(obj)
+       assert_global(obj.data)
+     }, val[0])
+   })
 
    done()
-  }
+ }
 </script>
