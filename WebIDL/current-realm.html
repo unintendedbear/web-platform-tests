@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<title>Current Realm</title>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<div id="log"></div>
+<iframe></iframe>
+<script>
+ setup({explicit_done:true})
+
+ function isObjectFromGlobal(object, global) {
+   return object instanceof global.Object;
+ }
+ function assert_global(obj) {
+   assert_false(isObjectFromGlobal(obj, self), obj + " should not be from top-level Realm")
+   assert_true(isObjectFromGlobal(obj, self[0]), obj + " should be from <iframe> Realm")
+ }
+
+ onload = function() {
+   [["querySelectorAll", "test"],
+    ["createElement", "x"],
+    ["createElementNS", null, "x"],
+    ["createDocumentFragment"],
+    ["createTextNode", "test"],
+    ["createComment", "test"],
+    ["createProcessingInstruction", "x", "x"],
+    ["createAttribute", "x"],
+    ["createAttributeNS", "x", "x"],
+    ["createEvent", "Event"],
+    ["createRange"],
+    ["createNodeIterator", document.head],
+    ["createTreeWalker", document.head]].forEach(function(val) {
+     test(function() {
+       var obj = self[0].document[val[0]](val[1], val[2])
+       assert_global(obj)
+
+       obj = Document.prototype[val[0]].call(self[0].document, val[1], val[2])
+       assert_global(obj)
+     }, val[0])
+   })
+
+   ;[["createDocumentType", "x", "", ""],
+    ["createDocument", null, "", null],
+    ["createHTMLDocument", "x"]].forEach(function(val) {
+     test(function() {
+       var obj = self[0].document.implementation[val[0]](val[1], val[2], val[3])
+       assert_global(obj)
+
+       obj = DOMImplementation.prototype[val[0]].call(self[0].document.implementation, val[1], val[2], val[3])
+       assert_global(obj)
+     }, val[0])
+   })
+
+   test(function() {
+     var c = self[0].document.createElement("canvas").getContext("2d"),
+         img = c.createImageData(5, 5);
+     assert_global(img)
+     assert_global(img.data)
+
+     img = CanvasRenderingContext2D.prototype.createImageData.call(c, 5, 5);
+     assert_global(img)
+     assert_global(img.data)
+   }, "createImageData")
+
+   done()
+  }
+</script>
