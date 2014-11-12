@@ -127,6 +127,15 @@
      }, val[0])
    })
 
+   test(function() {
+     var c = new self[0].FontFace("test", "about:blank"),
+         obj = c.load()
+     assert_global(obj)
+
+     obj = FontFace.prototype.load.call(c)
+     assert_global(obj)
+   }, "FontFace's load()")
+
    done()
  }
 </script>
